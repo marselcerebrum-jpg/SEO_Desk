@@ -35,6 +35,7 @@ import {
 } from '@/lib/pipeline/types';
 import { testWpConnection } from '@/lib/pipeline/providers/wordpress';
 import { startRun } from '@/lib/pipeline/start';
+import { loginToEmail } from '@/lib/roles';
 import { getSettings, isSupabaseConfigured, saveSettings } from '@/lib/settings';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient, requireLeader, requireUser } from '@/lib/supabase/server';
@@ -74,7 +75,7 @@ export async function signIn(_: ActionState, form: FormData): Promise<ActionStat
     redirect('/');
   }
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({ email: loginToEmail(email), password });
   if (error) return { error: 'Username/email atau password salah', email };
   redirect('/');
 }
@@ -95,10 +96,8 @@ function readNewAccount(form: FormData): NewAccount | { error: string } {
   const email = text(form, 'email').toLowerCase();
   const password = String(form.get('password') ?? '');
   if (!name) return { error: 'Nama wajib diisi' };
-  // Mode lokal boleh pakai username (mis. "admin"); Supabase Auth wajib email.
-  if (isSupabaseConfigured() ? !email.includes('@') : !/^[^s]{3,}$/.test(email)) {
-    return { error: isSupabaseConfigured() ? 'Email tidak valid' : 'Username/email minimal 3 karakter tanpa spasi' };
-  }
+  // Boleh username (mis. "admin") atau email; di Supabase username dipetakan lewat loginToEmail.
+  if (!/^\S{3,}$/.test(email)) return { error: 'Username/email minimal 3 karakter tanpa spasi' };
   if (password.length < 8) return { error: 'Password minimal 8 karakter' };
   if (form.has('confirm') && password !== String(form.get('confirm'))) return { error: 'Konfirmasi password tidak sama' };
   return { name, email, password };
@@ -243,7 +242,7 @@ export async function createAccount(_: ActionState, form: FormData): Promise<Act
     }
   } else {
     const { error } = await createAdminClient().auth.admin.createUser({
-      email: input.email,
+      email: loginToEmail(input.email),
       password: input.password,
       email_confirm: true, // langsung bisa login tanpa verifikasi email
       user_metadata: { name: input.name },

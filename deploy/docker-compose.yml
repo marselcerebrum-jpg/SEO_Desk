@@ -1,0 +1,23 @@
+# Deploy di VPS: app SEO Desk + Supabase self-host "supabase-seodesk" (jaringan Docker yang sama).
+# Dijalankan dari folder repo:  docker compose -f deploy/docker-compose.yml up -d --build
+# Isi deploy/.env dulu (lihat deploy/.env.example).
+services:
+  seodesk:
+    build: ..
+    container_name: seodesk
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - seodesk_data:/app/data
+    ports:
+      - "127.0.0.1:3400:3000"
+    networks:
+      - supabase-seodesk
+
+volumes:
+  seodesk_data:
+
+networks:
+  supabase-seodesk:
+    name: supabase-seodesk_default
+    external: true

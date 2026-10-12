@@ -3,6 +3,7 @@ import { AccountSettings, ChangePasswordForm } from '@/components/account-settin
 import { DropdownEditor } from '@/components/dropdown-editor';
 import { listAccounts } from '@/lib/accounts';
 import { getDb } from '@/lib/db';
+import { displayLogin } from '@/lib/roles';
 import { isSupabaseConfigured } from '@/lib/settings';
 import { requireUser } from '@/lib/supabase/server';
 
@@ -63,7 +64,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <section className="card" style={{ maxWidth: 560 }}>
           <h2>Ganti password</h2>
           <p className="muted" style={{ marginTop: 0 }}>
-            Mengganti password akun yang sedang dipakai ({user.email}).
+            Mengganti password akun yang sedang dipakai ({displayLogin(user.email)}).
           </p>
           <ChangePasswordForm />
         </section>

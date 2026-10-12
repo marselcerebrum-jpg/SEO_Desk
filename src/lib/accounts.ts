@@ -1,5 +1,6 @@
 import 'server-only';
 import { listLocalAccounts, type Role } from './local-auth';
+import { displayLogin } from './roles';
 import { isSupabaseConfigured } from './settings';
 import { createAdminClient } from './supabase/admin';
 import { supabaseRole } from './supabase/server';
@@ -25,7 +26,7 @@ export async function listAccounts(): Promise<Account[]> {
   return data.users
     .map((u) => ({
       id: u.id,
-      email: u.email ?? '',
+      email: displayLogin(u.email ?? ''),
       name: String(u.user_metadata?.name ?? ''),
       role: supabaseRole(u.app_metadata),
       createdAt: u.created_at,

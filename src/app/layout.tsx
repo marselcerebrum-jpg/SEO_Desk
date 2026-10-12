@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Icon } from '@/components/icons';
 import { NavLinks } from '@/components/nav-links';
-import { ROLES } from '@/lib/roles';
+import { displayLogin, ROLES } from '@/lib/roles';
 import { isSupabaseConfigured } from '@/lib/settings';
 import { getCurrentUser } from '@/lib/supabase/server';
 import { signOut } from './actions';
@@ -37,7 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </span>
                 <span className="user-info">
                   <span className="user-name" title={user.email}>
-                    {user.name || user.email}
+                    {user.name || displayLogin(user.email)}
                   </span>
                   <span className={`role-chip ${user.role}`}>{ROLES[user.role]}</span>
                 </span>
