@@ -50,3 +50,16 @@ Lupa password di mode lokal: Leader lain bisa reset di Setting → Akun; kalau s
 - Status `processing`/`error` jelas; satu keyword tidak bisa jalan dobel.
 - Proses gagal bisa **dilanjutkan** tanpa mengulang tahap yang sudah selesai.
 - Kategori yang tidak ada di WP menghentikan proses sebelum memanggil AI.
+
+## Live di VPS
+
+- App: https://seo.desk.marseltech.cloud → container `seodesk` (127.0.0.1:3400), kode di `/opt/seodesk`.
+- Supabase: https://api.seo.marseltech.cloud → stack `supabase-seodesk` di `/opt/supabase-seodesk` (envoy 127.0.0.1:8002).
+  Studio dilindungi DASHBOARD_USERNAME/DASHBOARD_PASSWORD di `/opt/supabase-seodesk/.env`.
+- nginx: `/etc/nginx/sites-available/{seodesk,api-seodesk}`, SSL dari certbot.
+
+Update app setelah push ke GitHub:
+
+```sh
+cd /opt/seodesk && git pull && docker compose -f deploy/docker-compose.yml up -d --build
+```
