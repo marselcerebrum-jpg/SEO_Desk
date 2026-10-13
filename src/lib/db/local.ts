@@ -12,6 +12,7 @@ import type {
   StepLog,
   StepName,
 } from '../pipeline/types';
+import type { DailyLog } from '../daily-log';
 import { DATA_DIR } from '../settings';
 import { seedPlatforms } from './platform-seed';
 import type { Db } from './types';
@@ -19,7 +20,7 @@ import type { Db } from './types';
 // Mode lokal: dipakai selama Supabase belum dihubungkan di menu Konfigurasi.
 // Semua operasi file sinkron, jadi tidak ada tulis-baca yang saling menimpa di satu proses Node.
 const DB_FILE = path.join(DATA_DIR, 'local-db.json');
-const VERSION = 3;
+const VERSION = 4;
 
 type LocalData = {
   version: number;
@@ -27,6 +28,7 @@ type LocalData = {
   keywords: Keyword[];
   runs: RunRow[];
   options: DropdownOption[];
+  logs: DailyLog[];
 };
 
 const KEYWORD_DEFAULTS = {
@@ -71,13 +73,17 @@ function load(): LocalData {
     // belum ada file
   }
   if (data?.version === VERSION) return data;
-  if (data?.version === 2) {
+  if (data?.version === 3) {
+    // v3 -> v4: Log Harian.
+    data = { ...data, version: VERSION, logs: [] };
+  } else if (data?.version === 2) {
     // v2 -> v3: kolom copywriter/QC + dropdown. Konfigurasi platform tetap.
     data = {
       ...data,
       version: VERSION,
       keywords: data.keywords.map((k) => ({ ...KEYWORD_DEFAULTS, ...k })),
       options: seedOptions(),
+      logs: [],
     };
   } else {
     // File belum ada atau format sangat lama: mulai dari data contoh.
@@ -105,11 +111,11 @@ const now = () => new Date().toISOString();
 const byNewest = <T extends { created_at?: string; started_at?: string }>(a: T, b: T) =>
   (b.created_at ?? b.started_at ?? '').localeCompare(a.created_at ?? a.started_at ?? '');
 
-// Keyword & run diganti; konfigurasi platform (prompt, domain) tetap.
+// Keyword & run diganti; konfigurasi platform (prompt, domain) dan Log Harian tetap.
 export function resetLocalData(withDemo: boolean) {
-  const { platforms, options } = load();
-  const fresh = withDemo ? demoData() : { version: VERSION, platforms, keywords: [], runs: [], options };
-  persist({ ...fresh, platforms, options });
+  const { platforms, options, logs } = load();
+  const fresh = withDemo ? demoData() : { version: VERSION, platforms, keywords: [], runs: [], options, logs };
+  persist({ ...fresh, platforms, options, logs });
 }
 
 export function localDb(): Db {
@@ -286,6 +292,33 @@ export function localDb(): Db {
         }
       });
     },
+
+    async listDailyLogs(userId) {
+      return load()
+        .logs.filter((l) => l.user_id === userId)
+        .sort((a, b) => b.log_date.localeCompare(a.log_date));
+    },
+    async getDailyLog(id) {
+      return load().logs.find((l) => l.id === id) ?? null;
+    },
+    async getDailyLogByDate(userId, date) {
+      return load().logs.find((l) => l.user_id === userId && l.log_date === date) ?? null;
+    },
+    async saveDailyLog(userId, input, id) {
+      mutate((d) => {
+        const log = id && d.logs.find((l) => l.id === id);
+        if (log) {
+          Object.assign(log, input, { updated_at: now() });
+        } else {
+          d.logs.push({ ...input, id: randomUUID(), user_id: userId, created_at: now(), updated_at: now() });
+        }
+      });
+    },
+    async deleteDailyLog(id) {
+      mutate((d) => {
+        d.logs = d.logs.filter((l) => l.id !== id);
+      });
+    },
   };
 }
 
@@ -420,5 +453,5 @@ function demoData(): LocalData {
     });
   });
 
-  return { version: VERSION, platforms, keywords, runs, options: seedOptions() };
+  return { version: VERSION, platforms, keywords, runs, options: seedOptions(), logs: [] };
 }

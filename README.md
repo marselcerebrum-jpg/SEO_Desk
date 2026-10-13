@@ -6,11 +6,13 @@ Menu:
 1. **Dashboard** — ringkasan keyword, proses berjalan, artikel per hari, kesiapan platform.
 2. **Generator** — buat artikel, set status Ready, lalu **Generate**:
    validasi → kategori WP → riset (Perplexity) → tulis draf (OpenAI) → judul/slug/meta ‖ HTML → draft WordPress.
-3. **Konfigurasi** — API key AI, database (Supabase), dan per platform: Link CTA, Username/Password WordPress,
+3. **Log Harian** — catatan kerja harian tiap orang (pekerjaan, belajar, masalah, afirmasi);
+   Leader bisa membaca log anggota tim.
+4. **Konfigurasi** — API key AI, database (Supabase), dan per platform: Link CTA, Username/Password WordPress,
    8 prompt, ID CTA, Domain, Artikel Kompetitor (pengganti master config di Sheets).
-4. **Setting** — akun tim, dropdown Generator, ganti password.
+5. **Setting** — akun tim, dropdown Generator, ganti password.
 
-Jabatan: **Leader** membuka semua menu dan membuat akun; **Staff** hanya Dashboard, Generator, dan ganti password.
+Jabatan: **Leader** membuka semua menu dan membuat akun; **Staff** hanya Dashboard, Generator, Log Harian, dan ganti password.
 Tidak ada pendaftaran mandiri — akun dibuat Leader di Setting → Akun.
 
 Stack: Next.js 16 (server Node), Supabase (Postgres + Auth) atau mode lokal.
@@ -25,7 +27,8 @@ Saat pertama dibuka, app meminta membuat akun **Leader** pertama di `/setup`.
 
 ## Pindah ke Supabase (untuk tim)
 
-1. Buat project Supabase. Di SQL Editor jalankan `supabase/migrations/0001_init.sql`, lalu `supabase/seed.sql`.
+1. Buat project Supabase. Di SQL Editor jalankan `supabase/migrations/0001_init.sql`,
+   `0002_daily_logs.sql`, lalu `supabase/seed.sql`.
 2. Authentication → matikan "Allow new users to sign up", lalu buat satu user lewat **Add user**
    (user tanpa jabatan dianggap Leader). Akun lain dibuat dari app di Setting → Akun.
    Akun mode lokal tidak ikut pindah ke Supabase.

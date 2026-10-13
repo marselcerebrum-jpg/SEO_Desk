@@ -1,5 +1,6 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
+import type { DailyLog } from '../daily-log';
 import type { DropdownOption, Keyword, Platform, RunRow } from '../pipeline/types';
 import { createAdminClient } from '../supabase/admin';
 import type { Db, KeywordSummary, RunSummary } from './types';
@@ -157,6 +158,34 @@ export function supabaseDb(): Db {
       let query = db.from('keywords').update({ [field]: to }).eq(field, from);
       if (platformId) query = query.eq('platform_id', platformId);
       check(await query);
+    },
+
+    async listDailyLogs(userId) {
+      return (
+        check(
+          await db
+            .from('daily_logs')
+            .select('*')
+            .eq('user_id', userId)
+            .order('log_date', { ascending: false })
+            .returns<DailyLog[]>(),
+        ) ?? []
+      );
+    },
+    async getDailyLog(id) {
+      return check(await db.from('daily_logs').select('*').eq('id', id).maybeSingle<DailyLog>());
+    },
+    async getDailyLogByDate(userId, date) {
+      return check(
+        await db.from('daily_logs').select('*').eq('user_id', userId).eq('log_date', date).maybeSingle<DailyLog>(),
+      );
+    },
+    async saveDailyLog(userId, input, id) {
+      if (id) check(await db.from('daily_logs').update(input).eq('id', id));
+      else check(await db.from('daily_logs').insert({ ...input, user_id: userId }));
+    },
+    async deleteDailyLog(id) {
+      check(await db.from('daily_logs').delete().eq('id', id));
     },
   };
 }

@@ -635,3 +635,136 @@ details > summary { cursor: pointer; font-weight: 700; }
 .login-title { margin: 4px 0 4px; font-size: 22px; text-align: center; }
 .login-lead { margin: 0 0 16px; text-align: center; font-size: 13px; }
 .login form { display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------- Log Harian ---------- */
+.log-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .log-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.log-member select { min-width: 160px; }
+button.log-export { display: inline-flex; align-items: center; gap: 6px; border-color: var(--border-strong); color: var(--navy); }
+
+/* Banner afirmasi: navy dengan aksen kuning, berganti tiap 2 menit */
+.log-affirm {
+  position: relative; overflow: hidden; margin-bottom: 16px; padding: 22px 26px 24px;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center;
+  border-radius: 14px; color: #fff;
+  background: radial-gradient(120% 140% at 100% 0%, #1d5576 0%, var(--navy) 55%, #001f30 100%);
+}
+.log-affirm .qm { align-self: start; margin-top: 6px; font-size: 72px; line-height: 0.7; font-weight: 800; color: var(--yellow); }
+.log-affirm .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.log-affirm .cat { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; background: var(--yellow); color: var(--navy); }
+.log-affirm .no, .log-affirm .next { font-size: 11.5px; font-weight: 600; color: var(--cream); }
+.log-affirm .txt { margin: 0; max-width: 62ch; min-height: 1.4em; font-size: clamp(17px, 2vw, 22px); font-weight: 700; line-height: 1.4; animation: log-fade 0.35s ease-out; }
+.log-affirm .who { margin-top: 6px; font-size: 12.5px; color: var(--cream); }
+.log-affirm .side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.log-affirm .abtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 9px; font-size: 12.5px; white-space: nowrap; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); color: #fff; }
+.log-affirm .abtn:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.3); }
+.log-affirm .abtn.pin { background: var(--red); border-color: var(--red); }
+.log-affirm .abtn.pin:hover { background: var(--accent-hover); }
+.log-affirm .abtn:disabled { opacity: 0.65; cursor: default; }
+.log-affirm .timer { position: absolute; left: 0; bottom: 0; width: 100%; height: 4px; transform-origin: left; background: linear-gradient(90deg, var(--yellow), var(--orange)); }
+@keyframes log-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (max-width: 860px) {
+  .log-affirm { grid-template-columns: 1fr; padding: 20px; }
+  .log-affirm .qm { display: none; }
+  .log-affirm .side { flex-direction: row; flex-wrap: wrap; align-items: center; }
+}
+
+/* Strip minggu */
+.log-week { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px 16px; }
+.log-week-nav { display: flex; align-items: center; gap: 6px; }
+.log-week-nav strong { min-width: 170px; text-align: center; font-size: 13.5px; color: var(--navy); }
+.log-week-nav .icon-button { border: 1px solid var(--border-strong); }
+.log-days { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
+button.log-day {
+  position: relative; flex: 1; min-width: 92px; padding: 8px 10px; text-align: left;
+  display: flex; flex-direction: column; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text); font-weight: 400;
+}
+button.log-day:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.log-day b { font-size: 12.5px; color: var(--navy); }
+.log-day span { font-size: 11.5px; color: var(--muted); }
+.log-day i { position: absolute; top: 9px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); }
+.log-day.filled i { background: #1f8a3a; }
+.log-day.weekend { opacity: 0.6; }
+button.log-day.today { border-color: var(--red); background: var(--accent-soft); }
+.log-day.today b { color: var(--red); }
+button.log-day.selected { outline: 2px solid var(--navy); outline-offset: -1px; opacity: 1; }
+
+/* Toolbar */
+.log-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; }
+.log-seg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.log-seg button { padding: 6px 12px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 700; }
+.log-seg button:hover { background: var(--accent-soft); color: var(--navy); }
+.log-seg button.on { background: var(--navy); color: #fff; }
+.log-search { flex: 1 1 240px; }
+.log-search input { width: 100%; min-width: 0; }
+
+/* Isi log */
+.log-none { color: var(--muted); font-style: italic; }
+.log-rich { white-space: pre-line; overflow-wrap: anywhere; }
+.log-acts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.log-acts li { display: flex; align-items: flex-start; gap: 8px; }
+.log-chk { flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 5px; display: grid; place-items: center; }
+.log-chk.done { background: #1f8a3a; color: #fff; }
+.log-chk.lanjut { border: 2px solid var(--orange); }
+.log-act-text { flex: 1; }
+.log-tag { margin-left: 6px; padding: 1px 7px; border-radius: 5px; font-size: 11px; font-weight: 700; white-space: nowrap; background: var(--warn-bg); color: var(--warn); }
+.log-time { font-size: 11.5px; font-weight: 600; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.log-row-actions { display: flex; gap: 2px; }
+.log-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 44px 20px; text-align: center; }
+
+/* Tampilan Diary */
+.log-diary { display: flex; flex-direction: column; gap: 14px; }
+.log-entry { display: grid; grid-template-columns: 96px minmax(0, 1fr); overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.log-date { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 16px 10px; text-align: center; background: var(--navy); color: #fff; }
+.log-date .d { font-size: 30px; font-weight: 800; line-height: 1; }
+.log-date .m { font-size: 11px; font-weight: 700; color: var(--cream); }
+.log-date .h { margin-top: 6px; font-size: 11.5px; font-weight: 700; color: var(--yellow); }
+.log-body { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; padding: 16px 18px; }
+.log-label { margin: 0 0 8px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: var(--tone, var(--navy)); }
+.log-label.kerja { color: #9a6200; }
+.log-notes { display: flex; flex-direction: column; gap: 10px; }
+.log-note { padding: 8px 10px; border-left: 3px solid var(--tone); border-radius: 0 8px 8px 0; background: var(--tone-soft); font-size: 13px; }
+.log-note .log-label { margin-bottom: 2px; }
+.log-note.learn { --tone: #1f6b33; --tone-soft: #e6f4e9; }
+.log-note.issue { --tone: var(--err); --tone-soft: #fcebeb; }
+.log-note.afirm { --tone: #a75400; --tone-soft: #fdf0dc; }
+.log-foot { grid-column: 1 / -1; display: flex; justify-content: flex-end; padding-top: 8px; border-top: 1px dashed var(--border); }
+@media (max-width: 860px) {
+  .log-body { grid-template-columns: 1fr; }
+  .log-entry { grid-template-columns: 68px minmax(0, 1fr); }
+  .log-date .d { font-size: 22px; }
+}
+
+/* Tampilan Tabel */
+.log-table { width: 100%; min-width: 1080px; }
+.log-table td { vertical-align: top; }
+.log-table .log-groups th { text-align: center; font-size: 11.5px; letter-spacing: 0.03em; text-transform: uppercase; }
+.log-table .g-kerja { background: var(--g-seo-bg); color: var(--g-seo-fg); }
+.log-table .g-catat { background: var(--g-ai-bg); color: var(--g-ai-fg); }
+.log-table .g-afirm { background: var(--g-copy-bg); color: var(--g-copy-fg); }
+.log-table th.c-belajar { background: #e6f4e9; width: 240px; }
+.log-table th.c-masalah { background: #fcebeb; width: 240px; }
+.log-table th.c-afirm { background: #fdf0dc; width: 220px; }
+.log-afirm-cell { font-style: italic; color: #8a4500; }
+
+/* Dialog */
+.log-modal { width: min(780px, calc(100vw - 32px)); }
+.log-modal textarea { min-height: 84px; font-family: inherit; font-size: 13px; }
+.log-date-input { max-width: 220px; margin-bottom: 14px; }
+.log-fieldset { display: flex; flex-direction: column; gap: 8px; margin: 0 0 14px; padding: 12px 14px 14px; border: 1px solid var(--border); border-radius: 12px; }
+.log-fieldset legend { padding: 2px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.log-fieldset.kerja legend { background: var(--yellow); color: var(--navy); }
+.log-fieldset.catat legend { background: var(--navy); color: #fff; }
+.log-act-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 140px 34px; gap: 8px; align-items: center; }
+.log-act-row input, .log-act-row select { width: 100%; }
+.log-add { align-self: flex-start; }
+@media (max-width: 640px) { .log-act-row { grid-template-columns: 1fr 34px; } .log-act-row > :nth-child(2) { grid-column: 1 / -1; grid-row: 1; } }
+
+.log-toast {
+  position: fixed; left: 50%; bottom: 24px; z-index: 60; transform: translateX(-50%);
+  padding: 10px 18px; border-radius: 10px; background: var(--navy); color: #fff; font-size: 13px; font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 48, 73, 0.3);
+}
+.log-toast.err { background: var(--err); }
+@media (prefers-reduced-motion: reduce) { .log-affirm .txt { animation: none; } }

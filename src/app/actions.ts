@@ -5,6 +5,15 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { listAccounts } from '@/lib/accounts';
 import { getDb } from '@/lib/db';
+import {
+  cleanActivities,
+  formatDate,
+  isIsoDate,
+  mergeInto,
+  todayInJakarta,
+  type DailyLogInput,
+  type LogActivity,
+} from '@/lib/daily-log';
 import { resetLocalData } from '@/lib/db/local';
 import type { KeywordOptionField } from '@/lib/db/types';
 import { platformRowsFromCsv } from '@/lib/import-csv';
@@ -551,4 +560,83 @@ export async function resetLocal(_: ActionState, form: FormData): Promise<Action
   resetLocalData(withDemo);
   revalidatePath('/', 'layout');
   return { ok: withDemo ? 'Data contoh dipulihkan' : 'Keyword dan riwayat run lokal dikosongkan' };
+}
+
+// ---------- Log Harian ----------
+
+export type DailyLogPayload = {
+  id?: string;
+  date: string;
+  activities: LogActivity[];
+  learn: string;
+  issue: string;
+  affirmation: string;
+};
+
+const clip = (value: unknown, max: number) => String(value ?? '').trim().slice(0, max);
+
+// Log hanya bisa diubah pemiliknya; Leader cukup melihat log anggota lain.
+async function ownLog(id: string, userId: string) {
+  const log = await getDb().getDailyLog(id);
+  return log && log.user_id === userId ? log : null;
+}
+
+export async function saveDailyLog(payload: DailyLogPayload): Promise<ActionState> {
+  const me = await requireUser();
+  if (!isIsoDate(payload.date)) return { error: 'Tanggal tidak valid' };
+  const activities = cleanActivities((payload.activities ?? []).slice(0, 100)).map((a) => ({ ...a, text: a.text.slice(0, 2000) }));
+  if (!activities.length) return { error: 'Isi minimal satu pekerjaan' };
+  const input: DailyLogInput = {
+    log_date: payload.date,
+    activities,
+    learn: clip(payload.learn, 5000),
+    issue: clip(payload.issue, 5000),
+    affirmation: clip(payload.affirmation, 500),
+  };
+
+  const db = getDb();
+  const editing = payload.id ? await ownLog(payload.id, me.id) : null;
+  if (payload.id && !editing) return { error: 'Log tidak ditemukan' };
+  let ok: string;
+  try {
+    const sameDay = await db.getDailyLogByDate(me.id, input.log_date);
+    if (sameDay && sameDay.id !== editing?.id) {
+      // Satu hari satu log: gabungkan ke log yang sudah ada di tanggal itu.
+      await db.saveDailyLog(me.id, mergeInto(sameDay, input), sameDay.id);
+      if (editing) await db.deleteDailyLog(editing.id);
+      ok = `Digabung ke log ${formatDate(input.log_date)}`;
+    } else {
+      await db.saveDailyLog(me.id, input, editing?.id);
+      ok = editing ? 'Log diperbarui' : 'Log disimpan';
+    }
+  } catch (error) {
+    return { error: errorText(error) };
+  }
+  revalidatePath('/log-harian');
+  return { ok };
+}
+
+export async function pinAffirmation(text: string): Promise<ActionState> {
+  const me = await requireUser();
+  const affirmation = clip(text, 500);
+  if (!affirmation) return { error: 'Afirmasi kosong' };
+  const db = getDb();
+  const date = todayInJakarta();
+  const log = await db.getDailyLogByDate(me.id, date);
+  try {
+    if (log) await db.saveDailyLog(me.id, { ...log, affirmation }, log.id);
+    else await db.saveDailyLog(me.id, { log_date: date, activities: [], learn: '', issue: '', affirmation });
+  } catch (error) {
+    return { error: errorText(error) };
+  }
+  revalidatePath('/log-harian');
+  return { ok: 'Afirmasi disimpan ke log hari ini' };
+}
+
+export async function deleteDailyLog(id: string): Promise<ActionState> {
+  const me = await requireUser();
+  if (!(await ownLog(id, me.id))) return { error: 'Log tidak ditemukan' };
+  await getDb().deleteDailyLog(id);
+  revalidatePath('/log-harian');
+  return { ok: 'Log dihapus' };
 }

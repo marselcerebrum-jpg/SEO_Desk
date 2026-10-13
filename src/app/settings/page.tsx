@@ -46,7 +46,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </div>
           <p className="muted" style={{ marginTop: 0 }}>
             Akun langsung bisa dipakai login. <strong>Leader</strong> bisa membuka semua menu;{' '}
-            <strong>Staff</strong> hanya Dashboard, Generator, dan ganti password sendiri.
+            <strong>Staff</strong> hanya Dashboard, Generator, Log Harian, dan ganti password sendiri.
             {!isSupabaseConfigured() && ' Saat ini akun tersimpan di komputer ini (mode lokal).'}
           </p>
           <AccountSettings accounts={await listAccounts()} currentUserId={user.id} />

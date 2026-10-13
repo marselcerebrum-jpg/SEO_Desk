@@ -7,6 +7,7 @@ import { Icon, type IconName } from './icons';
 const LINKS: { href: string; label: string; icon: IconName; leaderOnly?: boolean }[] = [
   { href: '/', label: 'Dashboard', icon: 'home' },
   { href: '/generator', label: 'Generator', icon: 'file' },
+  { href: '/log-harian', label: 'Log Harian', icon: 'notebook' },
   { href: '/konfigurasi', label: 'Konfigurasi', icon: 'gear', leaderOnly: true },
   { href: '/settings', label: 'Setting', icon: 'sliders' },
 ];

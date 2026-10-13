@@ -1,3 +1,4 @@
+import type { DailyLog, DailyLogInput } from '../daily-log';
 import type { DropdownOption, Keyword, OptionKind, Platform, RunRow } from '../pipeline/types';
 
 /** Kolom keyword yang isinya berasal dari dropdown. */
@@ -54,4 +55,12 @@ export interface Db {
   replaceOptions(kind: OptionKind, rows: (NewOption & { id?: string })[]): Promise<void>;
   /** Ikut ganti nilai di keyword saat pilihan dropdown di-rename. platformId null = semua platform. */
   renameKeywordValues(field: KeywordOptionField, from: string, to: string, platformId: string | null): Promise<void>;
+
+  /** Log Harian satu orang, terbaru dulu. */
+  listDailyLogs(userId: string): Promise<DailyLog[]>;
+  getDailyLog(id: string): Promise<DailyLog | null>;
+  getDailyLogByDate(userId: string, date: string): Promise<DailyLog | null>;
+  /** Tanpa id = log baru. Satu orang hanya punya satu log per tanggal. */
+  saveDailyLog(userId: string, input: DailyLogInput, id?: string): Promise<void>;
+  deleteDailyLog(id: string): Promise<void>;
 }
