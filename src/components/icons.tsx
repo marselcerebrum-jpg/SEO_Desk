@@ -31,6 +31,12 @@ const PATHS = {
   download: 'M12 3v12M7 10l5 5 5-5M4 21h16',
   shuffle: 'M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5',
   pin: 'M12 17v5M5 17h14l-2-4V4H7v9z',
+  message: 'M3 4h18v12H9l-6 5z',
+  copy: 'M9 9h12v12H9zM5 15V5a2 2 0 0 1 2-2h10',
+  summary: 'M14 3H6v18h12V7zM14 3v4h4M9 12h6M9 16h4',
+  video: 'M2 5h20v14H2zM10 9l5 3-5 3z',
+  database: 'M4 5c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
+  link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
 } as const;
 
 export type IconName = keyof typeof PATHS;

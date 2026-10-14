@@ -6,7 +6,8 @@ Menu:
 1. **Dashboard** — ringkasan keyword, proses berjalan, artikel per hari, kesiapan platform.
 2. **Generator** — buat artikel, set status Ready, lalu **Generate**:
    validasi → kategori WP → riset (Perplexity) → tulis draf (OpenAI) → judul/slug/meta ‖ HTML → draft WordPress.
-3. **Log Harian** — catatan kerja harian tiap orang (pekerjaan, belajar, masalah, afirmasi);
+3. **Log Harian** — catatan kerja harian tiap orang (pekerjaan + jam, belajar, masalah, afirmasi), Bahan Belajar,
+   dan Rangkuman Harian siap salin;
    Leader bisa membaca log anggota tim.
 4. **Konfigurasi** — API key AI, database (Supabase), dan per platform: Link CTA, Username/Password WordPress,
    8 prompt, ID CTA, Domain, Artikel Kompetitor (pengganti master config di Sheets).
@@ -28,7 +29,7 @@ Saat pertama dibuka, app meminta membuat akun **Leader** pertama di `/setup`.
 ## Pindah ke Supabase (untuk tim)
 
 1. Buat project Supabase. Di SQL Editor jalankan `supabase/migrations/0001_init.sql`,
-   `0002_daily_logs.sql`, lalu `supabase/seed.sql`.
+   `0002_daily_logs.sql`, `0003_learning_resources.sql`, lalu `supabase/seed.sql`.
 2. Authentication → matikan "Allow new users to sign up", lalu buat satu user lewat **Add user**
    (user tanpa jabatan dianggap Leader). Akun lain dibuat dari app di Setting → Akun.
    Akun mode lokal tidak ikut pindah ke Supabase.

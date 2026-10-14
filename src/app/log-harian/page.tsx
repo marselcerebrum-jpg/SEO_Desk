@@ -2,7 +2,6 @@ import { DailyLogView } from '@/components/daily-log';
 import { listAccounts } from '@/lib/accounts';
 import { todayInJakarta } from '@/lib/daily-log';
 import { getDb } from '@/lib/db';
-import { displayLogin } from '@/lib/roles';
 import { requireUser } from '@/lib/supabase/server';
 
 export default async function LogHarianPage({ searchParams }: { searchParams: Promise<{ anggota?: string }> }) {
@@ -13,11 +12,14 @@ export default async function LogHarianPage({ searchParams }: { searchParams: Pr
   const target = members.find((m) => m.id === anggota) ?? null;
   const ownerId = target?.id ?? me.id;
 
+  const db = getDb();
+  const [logs, resources] = await Promise.all([db.listDailyLogs(ownerId), db.listResources(ownerId)]);
+
   return (
     <DailyLogView
-      logs={await getDb().listDailyLogs(ownerId)}
+      logs={logs}
+      resources={resources}
       today={todayInJakarta()}
-      userName={me.name || displayLogin(me.email)}
       readOnly={ownerId !== me.id}
       members={members.map((m) => ({ id: m.id, name: m.name || m.email }))}
       selectedMember={ownerId}

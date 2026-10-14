@@ -8,11 +8,18 @@ import { getDb } from '@/lib/db';
 import {
   cleanActivities,
   formatDate,
+  invalidTimeRow,
   isIsoDate,
+  isResourceKind,
+  isResourceStatus,
+  learnDoneLine,
   mergeInto,
+  parseTags,
+  RESOURCE_STATUS,
   todayInJakarta,
   type DailyLogInput,
   type LogActivity,
+  type ResourceInput,
 } from '@/lib/daily-log';
 import { resetLocalData } from '@/lib/db/local';
 import type { KeywordOptionField } from '@/lib/db/types';
@@ -564,13 +571,13 @@ export async function resetLocal(_: ActionState, form: FormData): Promise<Action
 
 // ---------- Log Harian ----------
 
+// Afirmasi tidak ikut di form: diisi lewat tombol "Simpan ke log hari ini" dan dipertahankan saat log diedit.
 export type DailyLogPayload = {
   id?: string;
   date: string;
   activities: LogActivity[];
   learn: string;
   issue: string;
-  affirmation: string;
 };
 
 const clip = (value: unknown, max: number) => String(value ?? '').trim().slice(0, max);
@@ -584,19 +591,21 @@ async function ownLog(id: string, userId: string) {
 export async function saveDailyLog(payload: DailyLogPayload): Promise<ActionState> {
   const me = await requireUser();
   if (!isIsoDate(payload.date)) return { error: 'Tanggal tidak valid' };
-  const activities = cleanActivities((payload.activities ?? []).slice(0, 100)).map((a) => ({ ...a, text: a.text.slice(0, 2000) }));
+  const rows = (payload.activities ?? []).slice(0, 100);
+  if (invalidTimeRow(rows) >= 0) return { error: 'Jam selesai harus setelah jam mulai' };
+  const activities = cleanActivities(rows).map((a) => ({ ...a, text: a.text.slice(0, 2000) }));
   if (!activities.length) return { error: 'Isi minimal satu pekerjaan' };
+
+  const db = getDb();
+  const editing = payload.id ? await ownLog(payload.id, me.id) : null;
+  if (payload.id && !editing) return { error: 'Log tidak ditemukan' };
   const input: DailyLogInput = {
     log_date: payload.date,
     activities,
     learn: clip(payload.learn, 5000),
     issue: clip(payload.issue, 5000),
-    affirmation: clip(payload.affirmation, 500),
+    affirmation: editing?.affirmation ?? '',
   };
-
-  const db = getDb();
-  const editing = payload.id ? await ownLog(payload.id, me.id) : null;
-  if (payload.id && !editing) return { error: 'Log tidak ditemukan' };
   let ok: string;
   try {
     const sameDay = await db.getDailyLogByDate(me.id, input.log_date);
@@ -639,4 +648,97 @@ export async function deleteDailyLog(id: string): Promise<ActionState> {
   await getDb().deleteDailyLog(id);
   revalidatePath('/log-harian');
   return { ok: 'Log dihapus' };
+}
+
+// ---------- Bahan Belajar ----------
+
+export type ResourcePayload = {
+  id?: string;
+  title: string;
+  url: string;
+  kind: string;
+  tags: string;
+  status: string;
+  due_date: string;
+  note: string;
+};
+
+async function ownResource(id: string, userId: string) {
+  const resource = await getDb().getResource(id);
+  return resource && resource.user_id === userId ? resource : null;
+}
+
+// Bahan yang baru ditandai selesai otomatis tercatat di "Belajar apa?" pada log hari ini.
+async function recordLearned(userId: string, resource: { title: string; url: string }) {
+  const db = getDb();
+  const date = todayInJakarta();
+  const line = learnDoneLine(resource);
+  const log = await db.getDailyLogByDate(userId, date);
+  if (log) {
+    if (!log.learn.includes(line)) {
+      await db.saveDailyLog(userId, { ...log, learn: [log.learn, line].filter((x) => x.trim()).join('\n') }, log.id);
+    }
+  } else {
+    await db.saveDailyLog(userId, { log_date: date, activities: [], learn: line, issue: '', affirmation: '' });
+  }
+}
+
+export async function saveResource(payload: ResourcePayload): Promise<ActionState> {
+  const me = await requireUser();
+  const title = clip(payload.title, 300);
+  if (!title) return { error: 'Judul wajib diisi' };
+  const url = clip(payload.url, 2000);
+  if (url && !/^https?:\/\//i.test(url)) return { error: 'Link harus diawali http:// atau https://' };
+  if (payload.due_date && !isIsoDate(payload.due_date)) return { error: 'Tanggal target tidak valid' };
+  const status = isResourceStatus(payload.status) ? payload.status : 'belum';
+
+  const editing = payload.id ? await ownResource(payload.id, me.id) : null;
+  if (payload.id && !editing) return { error: 'Bahan tidak ditemukan' };
+  const becameDone = status === 'selesai' && editing?.status !== 'selesai';
+  const input: ResourceInput = {
+    title,
+    url,
+    kind: isResourceKind(payload.kind) ? payload.kind : 'artikel',
+    tags: parseTags(String(payload.tags ?? '')),
+    status,
+    due_date: payload.due_date || null,
+    note: clip(payload.note, 5000),
+    done_date: status === 'selesai' ? (becameDone ? todayInJakarta() : (editing?.done_date ?? todayInJakarta())) : null,
+  };
+  try {
+    await getDb().saveResource(me.id, input, editing?.id);
+    if (becameDone) await recordLearned(me.id, input);
+  } catch (error) {
+    return { error: errorText(error) };
+  }
+  revalidatePath('/log-harian');
+  return { ok: becameDone ? 'Selesai! Tercatat di log hari ini' : editing ? 'Bahan diperbarui' : 'Bahan disimpan' };
+}
+
+export async function setResourceStatus(id: string, status: string): Promise<ActionState> {
+  const me = await requireUser();
+  const resource = await ownResource(id, me.id);
+  if (!resource) return { error: 'Bahan tidak ditemukan' };
+  if (!isResourceStatus(status)) return { error: 'Status tidak dikenal' };
+  const becameDone = status === 'selesai' && resource.status !== 'selesai';
+  try {
+    await getDb().saveResource(
+      me.id,
+      { ...resource, status, done_date: status === 'selesai' ? (resource.done_date ?? todayInJakarta()) : null },
+      id,
+    );
+    if (becameDone) await recordLearned(me.id, resource);
+  } catch (error) {
+    return { error: errorText(error) };
+  }
+  revalidatePath('/log-harian');
+  return { ok: becameDone ? 'Selesai! Tercatat di log hari ini' : `Status: ${RESOURCE_STATUS[status]}` };
+}
+
+export async function deleteResource(id: string): Promise<ActionState> {
+  const me = await requireUser();
+  if (!(await ownResource(id, me.id))) return { error: 'Bahan tidak ditemukan' };
+  await getDb().deleteResource(id);
+  revalidatePath('/log-harian');
+  return { ok: 'Bahan dihapus' };
 }

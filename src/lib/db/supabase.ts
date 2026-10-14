@@ -1,6 +1,6 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
-import type { DailyLog } from '../daily-log';
+import { normalizeLog, type DailyLog, type LearningResource } from '../daily-log';
 import type { DropdownOption, Keyword, Platform, RunRow } from '../pipeline/types';
 import { createAdminClient } from '../supabase/admin';
 import type { Db, KeywordSummary, RunSummary } from './types';
@@ -170,15 +170,17 @@ export function supabaseDb(): Db {
             .order('log_date', { ascending: false })
             .returns<DailyLog[]>(),
         ) ?? []
-      );
+      ).map(normalizeLog);
     },
     async getDailyLog(id) {
-      return check(await db.from('daily_logs').select('*').eq('id', id).maybeSingle<DailyLog>());
+      const log = check(await db.from('daily_logs').select('*').eq('id', id).maybeSingle<DailyLog>());
+      return log && normalizeLog(log);
     },
     async getDailyLogByDate(userId, date) {
-      return check(
+      const log = check(
         await db.from('daily_logs').select('*').eq('user_id', userId).eq('log_date', date).maybeSingle<DailyLog>(),
       );
+      return log && normalizeLog(log);
     },
     async saveDailyLog(userId, input, id) {
       if (id) check(await db.from('daily_logs').update(input).eq('id', id));
@@ -186,6 +188,20 @@ export function supabaseDb(): Db {
     },
     async deleteDailyLog(id) {
       check(await db.from('daily_logs').delete().eq('id', id));
+    },
+
+    async listResources(userId) {
+      return check(await db.from('learning_resources').select('*').eq('user_id', userId).returns<LearningResource[]>()) ?? [];
+    },
+    async getResource(id) {
+      return check(await db.from('learning_resources').select('*').eq('id', id).maybeSingle<LearningResource>());
+    },
+    async saveResource(userId, input, id) {
+      if (id) check(await db.from('learning_resources').update(input).eq('id', id));
+      else check(await db.from('learning_resources').insert({ ...input, user_id: userId }));
+    },
+    async deleteResource(id) {
+      check(await db.from('learning_resources').delete().eq('id', id));
     },
   };
 }

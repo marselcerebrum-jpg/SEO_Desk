@@ -12,7 +12,7 @@ import type {
   StepLog,
   StepName,
 } from '../pipeline/types';
-import type { DailyLog } from '../daily-log';
+import { normalizeLog, type DailyLog, type LearningResource } from '../daily-log';
 import { DATA_DIR } from '../settings';
 import { seedPlatforms } from './platform-seed';
 import type { Db } from './types';
@@ -20,7 +20,7 @@ import type { Db } from './types';
 // Mode lokal: dipakai selama Supabase belum dihubungkan di menu Konfigurasi.
 // Semua operasi file sinkron, jadi tidak ada tulis-baca yang saling menimpa di satu proses Node.
 const DB_FILE = path.join(DATA_DIR, 'local-db.json');
-const VERSION = 4;
+const VERSION = 5;
 
 type LocalData = {
   version: number;
@@ -29,6 +29,7 @@ type LocalData = {
   runs: RunRow[];
   options: DropdownOption[];
   logs: DailyLog[];
+  resources: LearningResource[];
 };
 
 const KEYWORD_DEFAULTS = {
@@ -73,9 +74,12 @@ function load(): LocalData {
     // belum ada file
   }
   if (data?.version === VERSION) return data;
-  if (data?.version === 3) {
+  if (data?.version === 4) {
+    // v4 -> v5: Bahan Belajar.
+    data = { ...data, version: VERSION, resources: [] };
+  } else if (data?.version === 3) {
     // v3 -> v4: Log Harian.
-    data = { ...data, version: VERSION, logs: [] };
+    data = { ...data, version: VERSION, logs: [], resources: [] };
   } else if (data?.version === 2) {
     // v2 -> v3: kolom copywriter/QC + dropdown. Konfigurasi platform tetap.
     data = {
@@ -84,6 +88,7 @@ function load(): LocalData {
       keywords: data.keywords.map((k) => ({ ...KEYWORD_DEFAULTS, ...k })),
       options: seedOptions(),
       logs: [],
+      resources: [],
     };
   } else {
     // File belum ada atau format sangat lama: mulai dari data contoh.
@@ -113,9 +118,9 @@ const byNewest = <T extends { created_at?: string; started_at?: string }>(a: T, 
 
 // Keyword & run diganti; konfigurasi platform (prompt, domain) dan Log Harian tetap.
 export function resetLocalData(withDemo: boolean) {
-  const { platforms, options, logs } = load();
-  const fresh = withDemo ? demoData() : { version: VERSION, platforms, keywords: [], runs: [], options, logs };
-  persist({ ...fresh, platforms, options, logs });
+  const { platforms, options, logs, resources } = load();
+  const fresh = withDemo ? demoData() : { version: VERSION, platforms, keywords: [], runs: [], options, logs, resources };
+  persist({ ...fresh, platforms, options, logs, resources });
 }
 
 export function localDb(): Db {
@@ -296,13 +301,16 @@ export function localDb(): Db {
     async listDailyLogs(userId) {
       return load()
         .logs.filter((l) => l.user_id === userId)
+        .map(normalizeLog)
         .sort((a, b) => b.log_date.localeCompare(a.log_date));
     },
     async getDailyLog(id) {
-      return load().logs.find((l) => l.id === id) ?? null;
+      const log = load().logs.find((l) => l.id === id);
+      return log ? normalizeLog(log) : null;
     },
     async getDailyLogByDate(userId, date) {
-      return load().logs.find((l) => l.user_id === userId && l.log_date === date) ?? null;
+      const log = load().logs.find((l) => l.user_id === userId && l.log_date === date);
+      return log ? normalizeLog(log) : null;
     },
     async saveDailyLog(userId, input, id) {
       mutate((d) => {
@@ -317,6 +325,28 @@ export function localDb(): Db {
     async deleteDailyLog(id) {
       mutate((d) => {
         d.logs = d.logs.filter((l) => l.id !== id);
+      });
+    },
+
+    async listResources(userId) {
+      return load().resources.filter((r) => r.user_id === userId);
+    },
+    async getResource(id) {
+      return load().resources.find((r) => r.id === id) ?? null;
+    },
+    async saveResource(userId, input, id) {
+      mutate((d) => {
+        const resource = id && d.resources.find((r) => r.id === id);
+        if (resource) {
+          Object.assign(resource, input, { updated_at: now() });
+        } else {
+          d.resources.push({ ...input, id: randomUUID(), user_id: userId, created_at: now(), updated_at: now() });
+        }
+      });
+    },
+    async deleteResource(id) {
+      mutate((d) => {
+        d.resources = d.resources.filter((r) => r.id !== id);
       });
     },
   };
@@ -453,5 +483,5 @@ function demoData(): LocalData {
     });
   });
 
-  return { version: VERSION, platforms, keywords, runs, options: seedOptions(), logs: [] };
+  return { version: VERSION, platforms, keywords, runs, options: seedOptions(), logs: [], resources: [] };
 }

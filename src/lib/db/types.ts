@@ -1,4 +1,4 @@
-import type { DailyLog, DailyLogInput } from '../daily-log';
+import type { DailyLog, DailyLogInput, LearningResource, ResourceInput } from '../daily-log';
 import type { DropdownOption, Keyword, OptionKind, Platform, RunRow } from '../pipeline/types';
 
 /** Kolom keyword yang isinya berasal dari dropdown. */
@@ -63,4 +63,10 @@ export interface Db {
   /** Tanpa id = log baru. Satu orang hanya punya satu log per tanggal. */
   saveDailyLog(userId: string, input: DailyLogInput, id?: string): Promise<void>;
   deleteDailyLog(id: string): Promise<void>;
+
+  /** Bahan belajar satu orang (tab Bahan Belajar di Log Harian). */
+  listResources(userId: string): Promise<LearningResource[]>;
+  getResource(id: string): Promise<LearningResource | null>;
+  saveResource(userId: string, input: ResourceInput, id?: string): Promise<void>;
+  deleteResource(id: string): Promise<void>;
 }
